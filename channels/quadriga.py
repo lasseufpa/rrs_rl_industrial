@@ -1,0 +1,66 @@
+from typing import Optional, Tuple
+
+import scipy.io as sio
+import numpy as np
+
+from sixg_radio_mgmt import Channel
+
+
+class QuadrigaChannels(Channel):
+    def __init__(
+        self,
+        max_number_ues: int,
+        max_number_basestations: int,
+        num_available_rbs: np.ndarray,
+        rng: np.random.Generator = np.random.default_rng(),
+    ) -> None:
+        super().__init__(
+            max_number_ues, max_number_basestations, num_available_rbs, rng
+        )
+        self.thermal_noise_power = 10e-14
+        self.episode_number = -1
+        self.episode_channels = np.empty([])
+
+    def step(
+        self,
+        step_number: int,
+        episode_number: int,
+        mobilities: np.ndarray,
+        sched_decision: np.ndarray,
+    ) -> np.ndarray:
+        if self.episode_number != episode_number:
+            self.episode_number = episode_number
+            self.episode_channels = self.read_mat_files(episode_number)
+
+        return self.calc_spectral_eff(sched_decision, step_number)
+
+    def calc_spectral_eff(
+        self, sched_decision: np.ndarray, step_number: int
+    ) -> np.ndarray:
+        # Sum transmitter and receiver antennas, and changing dimensions to
+        # B x U x R to match sched_decision dimensions. After multiplying
+        # with sched_decision, we obtain the channels only in the allocated RB
+        allocated_rbs_channels = (
+            np.expand_dims(
+                np.sum(
+                    np.sum(self.episode_channels[:, :, :, :, step_number], 0),
+                    0,
+                ),
+                0,
+            )
+            * sched_decision
+        )
+
+        allocated_rbs_rsrp = np.power(np.abs(allocated_rbs_channels), 2)
+        thermal_noise = np.sqrt(self.thermal_noise_power) * self.rng.normal(
+            size=allocated_rbs_rsrp.shape
+        )
+        spectral_efficiencies = np.log2(
+            1 + (allocated_rbs_rsrp / thermal_noise)
+        )
+        return spectral_efficiencies
+
+    def read_mat_files(self, episode: int) -> np.ndarray:
+        channels = sio.loadmat(f"channels/quadriga_channels/sim_{episode}.mat")
+
+        return channels["H"]
