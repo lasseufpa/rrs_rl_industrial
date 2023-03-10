@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 
-import scipy.io as sio
 import numpy as np
+import scipy.io as sio
 
 from sixg_radio_mgmt import Channel
 
