@@ -26,13 +26,20 @@ class QuadrigaChannels(Channel):
         step_number: int,
         episode_number: int,
         mobilities: np.ndarray,
-        sched_decision: np.ndarray,
+        sched_decision: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         if self.episode_number != episode_number:
             self.episode_number = episode_number
             self.episode_channels = self.read_mat_files(episode_number)
 
-        return self.calc_spectral_eff(sched_decision, step_number)
+        if sched_decision is not None:
+            return self.calc_spectral_eff(sched_decision, step_number)
+        else:
+            spectral_efficiencies = [
+                np.ones((self.max_number_ues, self.num_available_rbs[i]))
+                for i in np.arange(self.max_number_basestations)
+            ]
+        return np.array(spectral_efficiencies)
 
     def calc_spectral_eff(
         self, sched_decision: np.ndarray, step_number: int
@@ -52,11 +59,8 @@ class QuadrigaChannels(Channel):
         )
 
         allocated_rbs_rsrp = np.power(np.abs(allocated_rbs_channels), 2)
-        thermal_noise = np.sqrt(self.thermal_noise_power) * self.rng.normal(
-            size=allocated_rbs_rsrp.shape
-        )
         spectral_efficiencies = np.log2(
-            1 + (allocated_rbs_rsrp / thermal_noise)
+            1 + (allocated_rbs_rsrp / self.thermal_noise_power)
         )
         return spectral_efficiencies
 
