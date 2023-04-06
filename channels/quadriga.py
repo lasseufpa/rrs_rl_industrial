@@ -18,6 +18,7 @@ class QuadrigaChannels(Channel):
             max_number_ues, max_number_basestations, num_available_rbs, rng
         )
         self.thermal_noise_power = 10e-14
+        self.transmission_power = 0.1  # 0.1 Watts = 20 dBm
         self.episode_number = -1
         self.episode_channels = np.empty([])
 
@@ -60,7 +61,12 @@ class QuadrigaChannels(Channel):
 
         allocated_rbs_rsrp = np.power(np.abs(allocated_rbs_channels), 2)
         spectral_efficiencies = np.log2(
-            1 + (allocated_rbs_rsrp / self.thermal_noise_power)
+            1
+            + (
+                (self.transmission_power / self.num_available_rbs[0])
+                * allocated_rbs_rsrp
+                / self.thermal_noise_power
+            )
         )
         return spectral_efficiencies
 
