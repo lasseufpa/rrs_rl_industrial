@@ -6,6 +6,20 @@ basestations:
   num_available_rbs: [100]
 slices:
   max_number_slices: 1
+  slice_req:
+    embb:
+      number_ues: 20
+      ue_throughput: 20 # Mbps
+      latency: 20 # ms
+    urllc:
+      number_ues: 20
+      ue_throughput: 5 # Mbps
+      latency: 1
+    mmtc:
+      number_ues: 60
+      ue_throughput: 0.1 # Mbps
+      latency: 1 # ms
+      active_probability: 0.5
 ues:
   max_number_ues: 100
 simulation:
