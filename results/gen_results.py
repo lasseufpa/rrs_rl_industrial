@@ -202,7 +202,7 @@ def calc_slice_average(
 
 
 scenario_name = "industrial"
-agent_name = "round_robin"
+agent_name = "ssr"
 metrics = [
     "pkt_incoming",
     "pkt_effective_thr",
