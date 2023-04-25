@@ -8,7 +8,8 @@ tensorboard-logs/
 hist/*
 
 # Results
-results/*
+*.pdf
+*.npz
 
 # Quadriga files
 *.mat
