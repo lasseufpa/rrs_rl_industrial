@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 
 from agents.round_robin import RoundRobin
-from agents.ssr import SSR
+from agents.ssr_rl import SSRRL
 from associations.industrial import IndustrialAssociation
 from channels.quadriga import QuadrigaChannels
 from mobilities.simple import SimpleMobility
@@ -11,6 +11,7 @@ from traffics.industrial import IndustrialTraffic
 
 scenarios = ["industrial"]
 agents = ["ssr"]
+agents_rl = ["ssr"]
 seed = 10
 
 for scenario in scenarios:
@@ -28,13 +29,15 @@ for scenario in scenarios:
             scenario,
             agent_name,
             rng=rng,
+            obs_space=RLSimple.get_obs_space if agent_name in agents else None,
+            action_space=RLSimple.get_action_space,
         )
 
         match agent_name:
             case "round_robin":
                 AgentClass = RoundRobin
             case "ssr":
-                AgentClass = SSR
+                AgentClass = SSRRL
             case _:
                 raise Exception("Agent not implemented")
 
