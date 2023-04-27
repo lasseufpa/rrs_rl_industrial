@@ -48,7 +48,7 @@ class IndustrialTraffic(Traffic):
             + num_ue_mmtc
         ] = active_ues * (
             self.rng.poisson(
-                slice_req["urllc"]["ue_throughput"],
+                slice_req["mmtc"]["ue_throughput"],
                 num_ue_mmtc,
             )
             * 1e6

@@ -114,6 +114,11 @@ def plot_graph(
                 xlabel = "Step (n)"
                 ylabel = "Reward"
                 break
+            case "reward_cumsum":
+                plt.plot(np.cumsum(data_metrics["reward"]))
+                xlabel = "Step (n)"
+                ylabel = "Cumulative reward"
+                break
             case "total_network_throughput":
                 total_throughput = calc_total_throughput(
                     data_metrics, "pkt_throughputs"
@@ -144,6 +149,26 @@ def plot_graph(
                     plt.plot(spectral_eff, label=f"Slice {slice}")
                     xlabel = "Step (n)"
                     ylabel = "Thoughput capacity per RB (Mbps)"
+            case "violations":
+                violations = calc_slice_violations(data_metrics)
+                plt.plot(np.sum(violations[:1, :], axis=0), label="Slice 0")
+                plt.plot(np.sum(violations[2:4, :], axis=0), label="Slice 1")
+                plt.plot(violations[4, :], label="Slice 2")
+                plt.plot(np.sum(violations, axis=0), label="Total")
+                break
+            case "violations_cumsum":
+                violations = calc_slice_violations(data_metrics)
+                plt.plot(
+                    np.cumsum(np.sum(violations[:1, :], axis=0)),
+                    label="Slice 0",
+                )
+                plt.plot(
+                    np.cumsum(np.sum(violations[2:4, :], axis=0)),
+                    label="Slice 1",
+                )
+                plt.plot(np.cumsum(violations[4, :]), label="Slice 2")
+                plt.plot(np.cumsum(np.sum(violations, axis=0)), label="Total")
+                break
             case _:
                 raise Exception("Metric not found")
 
@@ -201,23 +226,70 @@ def calc_slice_average(
     return result_values
 
 
+def calc_slice_violations(data_metrics) -> np.ndarray:
+    # 1st dimension: eMBB throughput violations
+    # 2nd dimension: eMBB latency violations
+    # 3rd dimension: URLLC throughput violations
+    # 4th dimension: URLLC latency violations
+    # 5th dimension: mMTC latency violations
+    violations = np.zeros((5, data_metrics["pkt_throughputs"].shape[0]))
+
+    # Requirements
+    embb_throughput_req = 20
+    embb_latency_req = 20
+    urllc_throughput_req = 5
+    urllc_latency_req = 1
+    mmtc_latency_req = 5
+
+    # eMBB violations
+    violations[0, :] = (
+        calc_throughput_slice(data_metrics, "pkt_throughputs", 0)
+        < embb_throughput_req
+    ).astype(int)
+    violations[1, :] = (
+        calc_slice_average(data_metrics, "buffer_latencies", 0)
+        > embb_latency_req
+    ).astype(int)
+
+    # URLLC violations
+    violations[2, :] = (
+        calc_throughput_slice(data_metrics, "pkt_throughputs", 1)
+        < urllc_throughput_req
+    ).astype(int)
+    violations[3, :] = (
+        calc_slice_average(data_metrics, "buffer_latencies", 1)
+        > urllc_latency_req
+    ).astype(int)
+
+    # mMTC violations
+    violations[4, :] = (
+        calc_slice_average(data_metrics, "buffer_latencies", 2)
+        > mmtc_latency_req
+    ).astype(int)
+
+    return violations
+
+
 scenario_name = "industrial"
-agent_name = "ssr"
-metrics = [
-    "pkt_incoming",
-    "pkt_effective_thr",
-    "pkt_throughputs",
-    "dropped_pkts",
-    "buffer_occupancies",
-    "buffer_latencies",
-    "basestation_ue_assoc",
-    "basestation_slice_assoc",
-    "slice_ue_assoc",
-    "reward",
-    "total_network_throughput",
-    "spectral_efficiencies",
-]
-# metrics = ["spectral_efficiencies"]
+agent_name = "ssr_protect"  # "ssr_protect"
+# metrics = [
+#     "pkt_incoming",
+#     "pkt_effective_thr",
+#     "pkt_throughputs",
+#     "dropped_pkts",
+#     "buffer_occupancies",
+#     "buffer_latencies",
+#     "basestation_ue_assoc",
+#     "basestation_slice_assoc",
+#     "slice_ue_assoc",
+#     "reward",
+#     "reward_cumsum",
+#     "total_network_throughput",
+#     "spectral_efficiencies",
+#     "violations",
+#     "violations_cumsum",
+# ]
+metrics = ["violations", "violations_cumsum"]
 episodes = np.array([0], dtype=int)
 slices = np.arange(3)
 

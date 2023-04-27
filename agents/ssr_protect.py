@@ -7,7 +7,7 @@ from stable_baselines3.sac.sac import SAC
 from sixg_radio_mgmt import Agent, CommunicationEnv
 
 
-class SSRRL(Agent):
+class SSRProtect(Agent):
     def __init__(
         self,
         env: CommunicationEnv,
@@ -99,20 +99,6 @@ class SSRRL(Agent):
         reward = 0
         metric_slices = self.obs_space_format(obs_space, False)
         maximum_buffer_latency = 100
-        # eMBB
-        embb_req_throughput = 20
-        embb_req_latency = 20
-        reward -= (
-            1 - metric_slices[0] / embb_req_throughput
-            if metric_slices[0] < embb_req_throughput
-            else 0
-        )
-        reward -= (
-            (metric_slices[3] - embb_req_latency)
-            / (maximum_buffer_latency - embb_req_latency)
-            if metric_slices[3] > embb_req_latency
-            else 0
-        )
 
         # URLLC
         urllc_req_throughput = 5
@@ -129,14 +115,32 @@ class SSRRL(Agent):
             else 0
         )
 
-        # mMTC
-        mmtc_req_latency = 5
-        reward -= (
-            (metric_slices[5] - mmtc_req_latency)
-            / (maximum_buffer_latency - mmtc_req_latency)
-            if metric_slices[5] > mmtc_req_latency
-            else 0
-        )
+        if np.isclose(reward, 0):
+            # eMBB
+            embb_req_throughput = 20
+            embb_req_latency = 20
+            reward -= (
+                1 - metric_slices[0] / embb_req_throughput
+                if metric_slices[0] < embb_req_throughput
+                else 0
+            )
+            reward -= (
+                (metric_slices[3] - embb_req_latency)
+                / (maximum_buffer_latency - embb_req_latency)
+                if metric_slices[3] > embb_req_latency
+                else 0
+            )
+
+            # mMTC
+            mmtc_req_latency = 5
+            reward -= (
+                (metric_slices[5] - mmtc_req_latency)
+                / (maximum_buffer_latency - mmtc_req_latency)
+                if metric_slices[5] > mmtc_req_latency
+                else 0
+            )
+        else:
+            reward -= 10
 
         return reward
 

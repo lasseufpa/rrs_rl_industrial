@@ -18,7 +18,7 @@ slices:
     mmtc:
       number_ues: 60
       ue_throughput: 0.1 # Mbps
-      latency: 1 # ms
+      latency: 5 # ms
       active_probability: 0.5
 ues:
   max_number_ues: 100
