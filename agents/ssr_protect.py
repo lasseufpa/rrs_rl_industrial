@@ -2,8 +2,10 @@ from typing import Union
 
 import numpy as np
 from gym import spaces
+from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.sac.sac import SAC
 
+from agents.callbacks import ProgressBarManager
 from sixg_radio_mgmt import Agent, CommunicationEnv
 
 
@@ -31,6 +33,20 @@ class SSRProtect(Agent):
             tensorboard_log="./tensorboard-logs/",
             seed=self.seed,
         )
+        self.callback_checkpoint = CheckpointCallback(
+            save_freq=1000,
+            save_path="./agents/models/",
+            name_prefix="ssr_protect",
+        )
+        self.callback_evaluation = EvalCallback(
+            eval_env=env,
+            log_path="./evaluations/",
+            best_model_save_path="./agents/models/best_ssr_protect/",
+            n_eval_episodes=5,
+            eval_freq=5000,
+            verbose=False,
+            warn=False,
+        )
 
         # Variables for round-robin scheduling
         self.current_ues = np.array([])
@@ -43,7 +59,16 @@ class SSRProtect(Agent):
         return self.agent.predict(np.asarray(obs_space), deterministic=True)[0]
 
     def train(self, total_timesteps: int) -> None:
-        self.agent.learn(total_timesteps=int(total_timesteps), callback=[])
+        with ProgressBarManager(total_timesteps) as callback_progress_bar:
+            self.agent.learn(
+                total_timesteps=total_timesteps,
+                callback=[
+                    callback_progress_bar,
+                    self.callback_checkpoint,
+                    self.callback_evaluation,
+                ],
+            )
+        self.agent.save("./agents/models/final_ssr_protect")
 
     def save(self, filename: str) -> None:
         self.agent.save(filename)

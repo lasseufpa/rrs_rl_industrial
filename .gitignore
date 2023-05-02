@@ -10,6 +10,7 @@ hist/*
 # Results
 *.pdf
 *.npz
+*.zip
 
 # Quadriga files
 *.mat

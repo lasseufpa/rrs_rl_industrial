@@ -13,7 +13,7 @@ from traffics.industrial import IndustrialTraffic
 
 scenarios = ["industrial"]
 agents = ["ssr_protect"]  # ["ssr", "ssr_protect"]
-agents_rl = ["ssr", "ssr_protect"]
+agents_rl = ["ssr_project"]  # ["ssr", "ssr_protect"]
 seed = 10
 
 for scenario in scenarios:
@@ -48,6 +48,7 @@ for scenario in scenarios:
             comm_env.max_number_ues,
             comm_env.max_number_basestations,
             comm_env.num_available_rbs,
+            seed=seed,
         )
         comm_env.set_agent_functions(
             agent.obs_space_format,
@@ -56,11 +57,17 @@ for scenario in scenarios:
         )
 
         # check_env(comm_env)
-        total_number_steps = 1000
+        train_episodes = 99
+        steps_per_episode = 1000
+        train_runs = 1
+        total_number_steps = train_episodes * steps_per_episode * train_runs
+        print("########### TRAIN ###########")
         agent.train(total_number_steps)
 
         # Test
-        obs = comm_env.reset()
+        print("########### TEST ###########")
+        comm_env.max_number_episodes = 100
+        obs = comm_env.reset(99)
         for step_number in tqdm(np.arange(comm_env.max_number_steps)):
             sched_decision = agent.step(obs)
             obs, _, end_ep, _ = comm_env.step(sched_decision)
