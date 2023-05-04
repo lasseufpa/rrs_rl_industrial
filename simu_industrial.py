@@ -18,11 +18,6 @@ seed = 10
 
 for scenario in scenarios:
     for agent_name in agents:
-        rng = (
-            np.random.default_rng(seed)
-            if seed != -1
-            else np.random.default_rng()
-        )
         comm_env = CommunicationEnv(
             QuadrigaChannels,
             IndustrialTraffic,
@@ -30,7 +25,6 @@ for scenario in scenarios:
             IndustrialAssociation,
             scenario,
             agent_name,
-            rng=rng,
             obs_space=SSRRL.get_obs_space if agent_name in agents else None,
             action_space=SSRRL.get_action_space,
         )
@@ -67,9 +61,9 @@ for scenario in scenarios:
         # Test
         print("########### TEST ###########")
         comm_env.max_number_episodes = 100
-        obs = comm_env.reset(99)
+        obs = comm_env.reset(seed=seed, options={"initial_episode": 99})[0]
         for step_number in tqdm(np.arange(comm_env.max_number_steps)):
             sched_decision = agent.step(obs)
-            obs, _, end_ep, _ = comm_env.step(sched_decision)
+            obs, _, end_ep, _, _ = comm_env.step(sched_decision)
             if end_ep and (step_number + 1) < total_number_steps:
                 comm_env.reset()
