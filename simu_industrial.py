@@ -15,7 +15,6 @@ scenarios = ["industrial"]
 agents = ["ssr_protect"]  # ["ssr", "ssr_protect"]
 agents_rl = ["ssr_project"]  # ["ssr", "ssr_protect"]
 seed = 10
-
 for scenario in scenarios:
     for agent_name in agents:
         comm_env = CommunicationEnv(
