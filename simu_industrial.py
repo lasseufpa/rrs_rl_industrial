@@ -50,18 +50,26 @@ for scenario in scenarios:
         )
 
         # check_env(comm_env)
+        print("########### TRAIN ###########")
         train_episodes = 140
-        steps_per_episode = 1000
+        steps_per_episode = comm_env.max_number_steps
         train_runs = 1
         total_number_steps = train_episodes * steps_per_episode * train_runs
-        print("########### TRAIN ###########")
+        comm_env.max_number_episodes = train_episodes
         agent.train(total_number_steps)
 
         # Test
         print("########### TEST ###########")
         comm_env.max_number_episodes = 200
-        obs = comm_env.reset(seed=seed, options={"initial_episode": 140})[0]
-        for step_number in tqdm(np.arange(comm_env.max_number_steps * 60)):
+        obs = comm_env.reset(
+            seed=seed, options={"initial_episode": train_episodes}
+        )[0]
+        for step_number in tqdm(
+            np.arange(
+                comm_env.max_number_steps
+                * (comm_env.max_number_episodes - train_episodes)
+            )
+        ):
             sched_decision = agent.step(obs)
             obs, _, end_ep, _, _ = comm_env.step(sched_decision)
             if end_ep and (step_number + 1) < total_number_steps:

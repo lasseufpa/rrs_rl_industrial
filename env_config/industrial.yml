@@ -25,5 +25,5 @@ ues:
 simulation:
   simu_name: industrial
   max_number_steps: 1000
-  max_number_episodes: 140
+  max_number_episodes: 200
   hist_root_path: ./
