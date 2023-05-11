@@ -42,7 +42,7 @@ class SSRProtect(Agent):
             eval_env=env,
             log_path="./evaluations/",
             best_model_save_path="./agents/models/best_ssr_protect/",
-            n_eval_episodes=5,
+            n_eval_episodes=1,
             eval_freq=5000,
             verbose=False,
             warn=False,
@@ -143,7 +143,7 @@ class SSRProtect(Agent):
         if np.isclose(reward, 0):
             # eMBB
             embb_req_throughput = 20
-            embb_req_latency = 20
+            embb_req_latency = 30
             reward -= (
                 1 - metric_slices[0] / embb_req_throughput
                 if metric_slices[0] < embb_req_throughput
@@ -157,7 +157,7 @@ class SSRProtect(Agent):
             )
 
             # mMTC
-            mmtc_req_latency = 5
+            mmtc_req_latency = 50
             reward -= (
                 (metric_slices[5] - mmtc_req_latency)
                 / (maximum_buffer_latency - mmtc_req_latency)

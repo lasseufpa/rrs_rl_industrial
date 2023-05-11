@@ -10,7 +10,7 @@ slices:
     embb:
       number_ues: 20
       ue_throughput: 20 # Mbps
-      latency: 20 # ms
+      latency: 30 # ms
     urllc:
       number_ues: 20
       ue_throughput: 5 # Mbps
@@ -18,12 +18,12 @@ slices:
     mmtc:
       number_ues: 60
       ue_throughput: 0.1 # Mbps
-      latency: 5 # ms
+      latency: 50 # ms
       active_probability: 0.5
 ues:
   max_number_ues: 100
 simulation:
   simu_name: industrial
   max_number_steps: 1000
-  max_number_episodes: 99
+  max_number_episodes: 140
   hist_root_path: ./

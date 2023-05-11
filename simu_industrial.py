@@ -12,7 +12,7 @@ from sixg_radio_mgmt import CommunicationEnv
 from traffics.industrial import IndustrialTraffic
 
 scenarios = ["industrial"]
-agents = ["ssr_protect"]  # ["ssr", "ssr_protect"]
+agents = ["ssr", "ssr_protect"]
 agents_rl = ["ssr_project"]  # ["ssr", "ssr_protect"]
 seed = 10
 for scenario in scenarios:
@@ -50,7 +50,7 @@ for scenario in scenarios:
         )
 
         # check_env(comm_env)
-        train_episodes = 99
+        train_episodes = 140
         steps_per_episode = 1000
         train_runs = 1
         total_number_steps = train_episodes * steps_per_episode * train_runs
@@ -59,9 +59,9 @@ for scenario in scenarios:
 
         # Test
         print("########### TEST ###########")
-        comm_env.max_number_episodes = 100
-        obs = comm_env.reset(seed=seed, options={"initial_episode": 99})[0]
-        for step_number in tqdm(np.arange(comm_env.max_number_steps)):
+        comm_env.max_number_episodes = 200
+        obs = comm_env.reset(seed=seed, options={"initial_episode": 140})[0]
+        for step_number in tqdm(np.arange(comm_env.max_number_steps * 60)):
             sched_decision = agent.step(obs)
             obs, _, end_ep, _, _ = comm_env.step(sched_decision)
             if end_ep and (step_number + 1) < total_number_steps:

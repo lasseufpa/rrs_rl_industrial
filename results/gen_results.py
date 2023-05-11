@@ -98,7 +98,7 @@ def plot_graph(
                 xlabel = "Step (n)"
                 match metric:
                     case "buffer_latencies":
-                        ylabel = "Average buffer latency (ms)"
+                        ylabel = "Average buffer delay (ms)"
                     case "buffer_occupancies":
                         ylabel = "Buffer occupancy rate"
             case ("basestation_ue_assoc" | "basestation_slice_assoc"):
@@ -135,6 +135,14 @@ def plot_graph(
             case "total_network_throughput":
                 total_throughput = calc_total_throughput(
                     data_metrics, "pkt_throughputs"
+                )
+                plt.plot(total_throughput, label=f"{agent}")
+                xlabel = "Step (n)"
+                ylabel = "Throughput (Mbps)"
+                break
+            case "total_network_requested_throughput":
+                total_throughput = calc_total_throughput(
+                    data_metrics, "pkt_incoming"
                 )
                 plt.plot(total_throughput, label=f"{agent}")
                 xlabel = "Step (n)"
@@ -180,19 +188,34 @@ def plot_graph(
                 break
             case "violations_cumsum":
                 violations = calc_slice_violations(data_metrics)
+                range_violations = np.arange(1, violations.shape[1] + 1)
                 plt.plot(
-                    np.cumsum(np.sum(violations[:1, :], axis=0)),
+                    np.cumsum(
+                        np.sum(
+                            violations[:2, :],
+                            axis=0,
+                        )
+                    )
+                    / (2 * range_violations),
                     label=f"{agent}, slice 0",
                 )
                 plt.plot(
-                    np.cumsum(np.sum(violations[2:4, :], axis=0)),
+                    np.cumsum(
+                        np.sum(
+                            violations[2:4, :],
+                            axis=0,
+                        )
+                    )
+                    / (2 * range_violations),
                     label=f"{agent}, slice 1",
                 )
                 plt.plot(
-                    np.cumsum(violations[4, :]), label=f"{agent}, slice 2"
+                    np.cumsum(violations[4, :]) / range_violations,
+                    label=f"{agent}, slice 2",
                 )
                 plt.plot(
-                    np.cumsum(np.sum(violations, axis=0)),
+                    np.cumsum(np.sum(violations, axis=0))
+                    / (5 * range_violations),
                     label=f"{agent}, total",
                 )
                 xlabel = "Step (n)"
@@ -317,6 +340,7 @@ metrics = [
     "spectral_efficiencies",
     "violations",
     "violations_cumsum",
+    "total_network_requested_throughput",
 ]
 episodes = np.array([0], dtype=int)
 slices = np.arange(3)

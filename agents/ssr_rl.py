@@ -127,7 +127,7 @@ class SSRRL(Agent):
         maximum_buffer_latency = 100
         # eMBB
         embb_req_throughput = 20
-        embb_req_latency = 20
+        embb_req_latency = 30
         reward -= (
             1 - metric_slices[0] / embb_req_throughput
             if metric_slices[0] < embb_req_throughput
@@ -156,7 +156,7 @@ class SSRRL(Agent):
         )
 
         # mMTC
-        mmtc_req_latency = 5
+        mmtc_req_latency = 50
         reward -= (
             (metric_slices[5] - mmtc_req_latency)
             / (maximum_buffer_latency - mmtc_req_latency)
