@@ -297,10 +297,10 @@ def calc_slice_violations(data_metrics) -> np.ndarray:
 
     # Requirements
     embb_throughput_req = 20
-    embb_latency_req = 20
+    embb_latency_req = 30
     urllc_throughput_req = 5
     urllc_latency_req = 1
-    mmtc_latency_req = 5
+    mmtc_latency_req = 50
 
     # eMBB violations
     violations[0, :] = (
@@ -331,6 +331,91 @@ def calc_slice_violations(data_metrics) -> np.ndarray:
     return violations
 
 
+def gen_results_violations(
+    scenario_names: list[str],
+    agent_names: list[str],
+    episodes: np.ndarray,
+):
+    xlabel = ylabel = ""
+    for scenario in scenario_names:
+        plt.figure()
+        w, h = matfig.figaspect(0.6)
+        plt.figure(figsize=(w, h))
+        for agent in agent_names:
+            episodes_violations = read_episodes_violations(
+                scenario, agent, episodes
+            )
+            cumsum_episodes_violations = np.cumsum(
+                np.sum(episodes_violations, axis=1), axis=1
+            )
+            mean_violations = np.mean(cumsum_episodes_violations, axis=0)
+            std_violations = np.std(cumsum_episodes_violations, axis=0)
+            plt.plot(mean_violations, label=f"{agent}")
+            plt.fill_between(
+                np.arange(std_violations.shape[0]),
+                mean_violations - std_violations,
+                mean_violations + std_violations,
+                alpha=0.2,
+            )
+        plt.grid()
+        plt.xlabel(xlabel, fontsize=14)
+        plt.ylabel(ylabel, fontsize=14)
+        plt.xticks(fontsize=12)
+        plt.legend(fontsize=12)
+        os.makedirs(
+            f"./results/{scenario}/",
+            exist_ok=True,
+        )
+        plt.savefig(
+            "./results/{}/violations_analisys.pdf".format(scenario),
+            bbox_inches="tight",
+            pad_inches=0,
+            format="pdf",
+            dpi=1000,
+        )
+        plt.close("all")
+
+
+def read_episodes_violations(
+    scenario: str,
+    agent: str,
+    episodes: np.ndarray,
+) -> np.ndarray:
+    num_slice_requirements = 5
+    steps_per_episode = 1000
+    episodes_violations = np.zeros(
+        (
+            episodes.shape[0],
+            num_slice_requirements,
+            steps_per_episode,
+        )
+    )
+    for idx, episode in enumerate(episodes):
+        data = np.load(
+            f"hist/{scenario}/{agent}/ep_{episode}.npz",
+            allow_pickle=True,
+        )
+        data_metrics = {
+            "pkt_incoming": data["pkt_incoming"],
+            "pkt_throughputs": data["pkt_throughputs"],
+            "pkt_effective_thr": data["pkt_effective_thr"],
+            "buffer_occupancies": data["buffer_occupancies"],
+            "buffer_latencies": data["buffer_latencies"],
+            "dropped_pkts": data["dropped_pkts"],
+            "mobility": data["mobility"],
+            "spectral_efficiencies": data["spectral_efficiencies"],
+            "basestation_ue_assoc": data["basestation_ue_assoc"],
+            "basestation_slice_assoc": data["basestation_slice_assoc"],
+            "slice_ue_assoc": data["slice_ue_assoc"],
+            "sched_decision": data["sched_decision"],
+            "reward": data["reward"],
+            "slice_req": data["slice_req"],
+        }
+        episodes_violations[idx, :, :] = calc_slice_violations(data_metrics)
+
+    return episodes_violations
+
+
 scenario_names = ["industrial"]
 agent_names = ["ssr_protect", "ssr"]
 metrics = [
@@ -352,7 +437,8 @@ metrics = [
     "total_network_requested_throughput",
     "slice_allocation",
 ]
-episodes = np.arange(4)
+episodes = np.arange(140, 200)
 slices = np.arange(3)
 
 gen_results(scenario_names, agent_names, episodes, metrics, slices)
+gen_results_violations(scenario_names, agent_names, episodes)
