@@ -35,12 +35,12 @@ class SSRProtect(Agent):
         )
         self.callback_checkpoint = CheckpointCallback(
             save_freq=1000,
-            save_path="./agents/models/",
+            save_path="./agents/models/ssr_protect/",
             name_prefix="ssr_protect",
         )
         self.callback_evaluation = EvalCallback(
             eval_env=env,
-            log_path="./evaluations/",
+            log_path="./evaluations/ssr_protect",
             best_model_save_path="./agents/models/best_ssr_protect/",
             n_eval_episodes=1,
             eval_freq=5000,
@@ -126,8 +126,8 @@ class SSRProtect(Agent):
         maximum_buffer_latency = 100
 
         # URLLC
-        urllc_req_throughput = 5
-        urllc_req_latency = 1
+        urllc_req_throughput = self.env.slice_req["urllc"]["ue_throughput"]
+        urllc_req_latency = self.env.slice_req["urllc"]["latency"]
         reward -= (
             1 - metric_slices[1] / urllc_req_throughput
             if metric_slices[1] < urllc_req_throughput
@@ -142,8 +142,8 @@ class SSRProtect(Agent):
 
         if np.isclose(reward, 0):
             # eMBB
-            embb_req_throughput = 20
-            embb_req_latency = 30
+            embb_req_throughput = self.env.slice_req["embb"]["ue_throughput"]
+            embb_req_latency = self.env.slice_req["embb"]["latency"]
             reward -= (
                 1 - metric_slices[0] / embb_req_throughput
                 if metric_slices[0] < embb_req_throughput
@@ -157,7 +157,7 @@ class SSRProtect(Agent):
             )
 
             # mMTC
-            mmtc_req_latency = 50
+            mmtc_req_latency = self.env.slice_req["embb"]["latency"]
             reward -= (
                 (metric_slices[5] - mmtc_req_latency)
                 / (maximum_buffer_latency - mmtc_req_latency)
@@ -165,7 +165,7 @@ class SSRProtect(Agent):
                 else 0
             )
         else:
-            reward -= 10
+            reward -= 3 - 10 * reward
 
         return reward
 
@@ -198,38 +198,37 @@ class SSRProtect(Agent):
         slice_ue_assoc: np.ndarray,
     ) -> np.ndarray:
         number_slices = len(rbs_per_slice)
-        if np.array_equal(self.allocation_rbs, np.array([])):
-            initial_rb = 0
-            self.allocation_rbs = [
-                np.zeros(
-                    (
-                        self.max_number_ues,
-                        self.num_available_rbs[basestation],
-                    )
+        initial_rb = 0
+        self.allocation_rbs = [
+            np.zeros(
+                (
+                    self.max_number_ues,
+                    self.num_available_rbs[basestation],
                 )
-                for basestation in np.arange(self.max_number_basestations)
-            ]
-            for slice_idx in np.arange(number_slices):
-                idx_active_ues = slice_ue_assoc[slice_idx].nonzero()[0]
-                num_active_ues = np.sum(slice_ue_assoc[slice_idx]).astype(int)
-                num_rbs_per_ue = int(
-                    (
-                        np.floor(rbs_per_slice[slice_idx] / num_active_ues)
-                        if num_active_ues > 0
-                        else 0
-                    )
+            )
+            for basestation in np.arange(self.max_number_basestations)
+        ]
+        for slice_idx in np.arange(number_slices):
+            idx_active_ues = slice_ue_assoc[slice_idx].nonzero()[0]
+            num_active_ues = np.sum(slice_ue_assoc[slice_idx]).astype(int)
+            num_rbs_per_ue = int(
+                (
+                    np.floor(rbs_per_slice[slice_idx] / num_active_ues)
+                    if num_active_ues > 0
+                    else 0
                 )
-                remaining_rbs = (
-                    rbs_per_slice[slice_idx] - num_rbs_per_ue * num_active_ues
-                ).astype(int)
-                self.rbs_per_ue = np.ones(num_active_ues) * num_rbs_per_ue
-                self.rbs_per_ue[:remaining_rbs] += 1
+            )
+            remaining_rbs = (
+                rbs_per_slice[slice_idx] - num_rbs_per_ue * num_active_ues
+            ).astype(int)
+            self.rbs_per_ue = np.ones(num_active_ues) * num_rbs_per_ue
+            self.rbs_per_ue[:remaining_rbs] += 1
 
-                for idx, ue_idx in enumerate(idx_active_ues):
-                    self.allocation_rbs[0][
-                        ue_idx,
-                        initial_rb : initial_rb + int(self.rbs_per_ue[idx]),
-                    ] = 1
-                    initial_rb += int(self.rbs_per_ue[idx])
+            for idx, ue_idx in enumerate(idx_active_ues):
+                self.allocation_rbs[0][
+                    ue_idx,
+                    initial_rb : initial_rb + int(self.rbs_per_ue[idx]),
+                ] = 1
+                initial_rb += int(self.rbs_per_ue[idx])
 
         return np.array(self.allocation_rbs)

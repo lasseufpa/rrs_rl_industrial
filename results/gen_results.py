@@ -42,7 +42,7 @@ def gen_results(
                     format="pdf",
                     dpi=1000,
                 )
-                plt.close()
+                plt.close("all")
 
 
 def plot_graph(
@@ -113,6 +113,15 @@ def plot_graph(
                     case "basestation_slice_assoc":
                         ylabel = "Number of slices"
                 break
+            case "slice_allocation":
+                slice_allocation = np.sum(
+                    np.sum(np.squeeze(data_metrics["sched_decision"]), axis=2)
+                    * data_metrics["slice_ue_assoc"][:, slice, :],
+                    axis=1,
+                )
+                plt.plot(slice_allocation, label=f"{agent}, slice {slice}")
+                xlabel = "Step (n)"
+                ylabel = "# Allocated RBs"
             case "slice_ue_assoc":
                 number_uers_per_slice = np.sum(
                     data_metrics[metric][:, slice, :], axis=1
@@ -323,7 +332,7 @@ def calc_slice_violations(data_metrics) -> np.ndarray:
 
 
 scenario_names = ["industrial"]
-agent_names = ["ssr_protect"]  # , "ssr"]
+agent_names = ["ssr_protect", "ssr"]
 metrics = [
     "pkt_incoming",
     "pkt_effective_thr",
@@ -341,8 +350,9 @@ metrics = [
     "violations",
     "violations_cumsum",
     "total_network_requested_throughput",
+    "slice_allocation",
 ]
-episodes = np.array([0], dtype=int)
+episodes = np.arange(4)
 slices = np.arange(3)
 
 gen_results(scenario_names, agent_names, episodes, metrics, slices)

@@ -13,7 +13,7 @@ from traffics.industrial import IndustrialTraffic
 
 scenarios = ["industrial"]
 agents = ["ssr", "ssr_protect"]
-agents_rl = ["ssr_project"]  # ["ssr", "ssr_protect"]
+
 seed = 10
 for scenario in scenarios:
     for agent_name in agents:
@@ -24,6 +24,7 @@ for scenario in scenarios:
             IndustrialAssociation,
             scenario,
             agent_name,
+            seed=seed,
             obs_space=SSRRL.get_obs_space if agent_name in agents else None,
             action_space=SSRRL.get_action_space,
         )
@@ -50,6 +51,7 @@ for scenario in scenarios:
         )
 
         # check_env(comm_env)
+        print(f"\n\n########### Agent: {agent_name} ###########")
         print("########### TRAIN ###########")
         train_episodes = 140
         steps_per_episode = comm_env.max_number_steps
