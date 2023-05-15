@@ -4,6 +4,7 @@ from typing import Tuple
 import matplotlib.figure as matfig
 import matplotlib.pyplot as plt
 import numpy as np
+import yaml
 
 
 def gen_results(
@@ -296,11 +297,15 @@ def calc_slice_violations(data_metrics) -> np.ndarray:
     violations = np.zeros((5, data_metrics["pkt_throughputs"].shape[0]))
 
     # Requirements
-    embb_throughput_req = 20
-    embb_latency_req = 30
-    urllc_throughput_req = 5
-    urllc_latency_req = 1
-    mmtc_latency_req = 50
+    with open("./env_config/industrial.yml") as file:
+        data = yaml.safe_load(file)
+    embb_throughput_req = data["slices"]["slice_req"]["embb"]["ue_throughput"]
+    embb_latency_req = data["slices"]["slice_req"]["embb"]["latency"]
+    urllc_throughput_req = data["slices"]["slice_req"]["urllc"][
+        "ue_throughput"
+    ]
+    urllc_latency_req = data["slices"]["slice_req"]["urllc"]["latency"]
+    mmtc_latency_req = data["slices"]["slice_req"]["mmtc"]["latency"]
 
     # eMBB violations
     violations[0, :] = (
@@ -335,6 +340,7 @@ def gen_results_violations(
     scenario_names: list[str],
     agent_names: list[str],
     episodes: np.ndarray,
+    slice_names: list[str],
 ):
     xlabel = ylabel = ""
     for scenario in scenario_names:
@@ -345,18 +351,25 @@ def gen_results_violations(
             episodes_violations = read_episodes_violations(
                 scenario, agent, episodes
             )
-            cumsum_episodes_violations = np.cumsum(
-                np.sum(episodes_violations, axis=1), axis=1
-            )
-            mean_violations = np.mean(cumsum_episodes_violations, axis=0)
-            std_violations = np.std(cumsum_episodes_violations, axis=0)
-            plt.plot(mean_violations, label=f"{agent}")
-            plt.fill_between(
-                np.arange(std_violations.shape[0]),
-                mean_violations - std_violations,
-                mean_violations + std_violations,
-                alpha=0.2,
-            )
+            slice_metrics_selection = {
+                "embb": np.array([0, 1]),
+                "urllc": np.array([2, 3]),
+                "mmtc": np.array([4]),
+                "total": np.array([0, 1, 2, 3, 4]),
+            }
+            for slice in slice_names:
+                slice_episodes_violations = np.sum(
+                    episodes_violations[slice_metrics_selection[slice]], axis=1
+                )
+                mean_violations = np.mean(slice_episodes_violations, axis=0)
+                std_violations = np.std(slice_episodes_violations, axis=0)
+                plt.plot(mean_violations, label=f"{agent}, {slice}")
+                plt.fill_between(
+                    np.arange(std_violations.shape[0]),
+                    mean_violations - std_violations,
+                    mean_violations + std_violations,
+                    alpha=0.2,
+                )
         plt.grid()
         plt.xlabel(xlabel, fontsize=14)
         plt.ylabel(ylabel, fontsize=14)
@@ -437,8 +450,10 @@ metrics = [
     "total_network_requested_throughput",
     "slice_allocation",
 ]
-episodes = np.arange(140, 200)
+episodes = np.arange(190, 200)
 slices = np.arange(3)
 
-gen_results(scenario_names, agent_names, episodes, metrics, slices)
-gen_results_violations(scenario_names, agent_names, episodes)
+# gen_results(scenario_names, agent_names, episodes, metrics, slices)
+episodes = np.arange(140, 200)
+slice_names = ["total"]
+gen_results_violations(scenario_names, agent_names, episodes, slice_names)
