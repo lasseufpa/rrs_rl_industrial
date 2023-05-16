@@ -429,6 +429,136 @@ def read_episodes_violations(
     return episodes_violations
 
 
+def gen_results_histogram(
+    scenario_names: list[str],
+    agent_names: list[str],
+    episodes: np.ndarray,
+    slice_names: list[str],
+    metrics: list[str],
+):
+    slice_idx = {
+        "embb": 0,
+        "urllc": 1,
+        "mmtc": 2,
+    }
+    ylabel = "Cumulative distribution function (CDF)"
+    xlabel = ""
+    for scenario in scenario_names:
+        for metric in metrics:
+            if metric in [
+                "pkt_incoming",
+                "pkt_throughputs",
+                "pkt_effective_thr",
+            ]:
+                xlabel = "Throughput (Mbps)"
+            elif metric in ["buffer_latencies"]:
+                xlabel = "Average buffer delay (ms)"
+            plt.figure()
+            w, h = matfig.figaspect(0.6)
+            plt.figure(figsize=(w, h))
+            for agent in agent_names:
+                (episode_metrics, slice_ue_assoc) = read_episode_metric(
+                    scenario, agent, episodes, metric
+                )
+                # episode_metrics = [episodes, steps_per_episode, number_ues]
+                # slice_ue_assoc = [episodes, steps_per_episode, number_slices, number_ues]
+                for slice in slice_names:
+                    message_sizes = (
+                        8192 * 8
+                        if metric
+                        in [
+                            "pkt_incoming",
+                            "pkt_throughputs",
+                            "pkt_effective_thr",
+                        ]
+                        else 1
+                    )
+                    den_throughput = (
+                        1e6
+                        if metric
+                        in [
+                            "pkt_incoming",
+                            "pkt_throughputs",
+                            "pkt_effective_thr",
+                        ]
+                        else 1
+                    )
+                    slice_values = (
+                        np.sum(
+                            episode_metrics
+                            * slice_ue_assoc[:, :, slice_idx[slice], :],
+                            axis=2,
+                        )
+                        * message_sizes
+                    ) / (
+                        den_throughput
+                        * np.sum(
+                            slice_ue_assoc[:, :, slice_idx[slice], :],
+                            axis=2,
+                        )
+                    )
+                    slice_values = np.sort(
+                        slice_values[slice_values != 0].flatten()
+                    )
+                    y_axis = (
+                        np.arange(slice_values.shape[0])
+                        / slice_values.shape[0]
+                    )
+                    plt.plot(slice_values, y_axis, label=f"{agent}, {slice}")
+            plt.grid()
+            plt.xlabel(xlabel, fontsize=14)
+            plt.ylabel(ylabel, fontsize=14)
+            plt.xticks(fontsize=12)
+            plt.legend(fontsize=12)
+            os.makedirs(
+                f"./results/{scenario}/",
+                exist_ok=True,
+            )
+            plt.savefig(
+                f"./results/{scenario}/{metric}.pdf",
+                bbox_inches="tight",
+                pad_inches=0,
+                format="pdf",
+                dpi=1000,
+            )
+            plt.close("all")
+
+
+def read_episode_metric(
+    scenario: str,
+    agent: str,
+    episodes: np.ndarray,
+    metric: str,
+) -> Tuple[np.ndarray, np.ndarray]:
+    steps_per_episode = 1000
+    number_ues = 100
+    number_slices = 3
+    episode_metric = np.zeros(
+        (
+            episodes.shape[0],
+            steps_per_episode,
+            number_ues,
+        )
+    )
+    slice_ue_assoc = np.zeros(
+        (
+            episodes.shape[0],
+            steps_per_episode,
+            number_slices,
+            number_ues,
+        )
+    )
+    for idx, episode in enumerate(episodes):
+        data = np.load(
+            f"hist/{scenario}/{agent}/ep_{episode}.npz",
+            allow_pickle=True,
+        )
+        episode_metric[idx, :, :] = data[metric]
+        slice_ue_assoc[idx, :, :, :] = data["slice_ue_assoc"]
+
+    return (episode_metric, slice_ue_assoc)
+
+
 scenario_names = ["industrial"]
 agent_names = ["ssr_protect", "ssr"]
 metrics = [
@@ -455,5 +585,14 @@ slices = np.arange(3)
 
 # gen_results(scenario_names, agent_names, episodes, metrics, slices)
 episodes = np.arange(140, 200)
-slice_names = ["total"]
-gen_results_violations(scenario_names, agent_names, episodes, slice_names)
+slice_names = ["total", "urllc"]
+# gen_results_violations(scenario_names, agent_names, episodes, slice_names)
+metrics = ["buffer_latencies", "pkt_throughputs"]
+slice_names = ["embb", "urllc", "mmtc"]
+gen_results_histogram(
+    scenario_names,
+    agent_names,
+    episodes,
+    slice_names,
+    metrics,
+)
