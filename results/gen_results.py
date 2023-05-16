@@ -342,7 +342,8 @@ def gen_results_violations(
     episodes: np.ndarray,
     slice_names: list[str],
 ):
-    xlabel = ylabel = ""
+    xlabel = "Step (n)"
+    ylabel = "# of slice violations"
     for scenario in scenario_names:
         plt.figure()
         w, h = matfig.figaspect(0.6)
@@ -359,7 +360,8 @@ def gen_results_violations(
             }
             for slice in slice_names:
                 slice_episodes_violations = np.sum(
-                    episodes_violations[slice_metrics_selection[slice]], axis=1
+                    episodes_violations[:, slice_metrics_selection[slice], :],
+                    axis=1,
                 )
                 mean_violations = np.mean(slice_episodes_violations, axis=0)
                 std_violations = np.std(slice_episodes_violations, axis=0)
@@ -583,10 +585,11 @@ metrics = [
 episodes = np.arange(190, 200)
 slices = np.arange(3)
 
-# gen_results(scenario_names, agent_names, episodes, metrics, slices)
+gen_results(scenario_names, agent_names, episodes, metrics, slices)
 episodes = np.arange(140, 200)
-slice_names = ["total", "urllc"]
-# gen_results_violations(scenario_names, agent_names, episodes, slice_names)
+slice_names = ["urllc", "total"]
+agent_names = ["ssr_protect", "ssr"]
+gen_results_violations(scenario_names, agent_names, episodes, slice_names)
 metrics = ["buffer_latencies", "pkt_throughputs"]
 slice_names = ["embb", "urllc", "mmtc"]
 gen_results_histogram(
