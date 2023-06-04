@@ -342,7 +342,7 @@ def gen_results_violations(
     episodes: np.ndarray,
     slice_names: list[str],
 ):
-    xlabel = "Step (n)"
+    xlabel = "TTI"
     ylabel = "# of slice violations"
     for scenario in scenario_names:
         plt.figure()
@@ -454,7 +454,7 @@ def gen_results_histogram(
             ]:
                 xlabel = "Throughput (Mbps)"
             elif metric in ["buffer_latencies"]:
-                xlabel = "Average buffer delay (ms)"
+                xlabel = "Buffer delay (ms)"
             plt.figure()
             w, h = matfig.figaspect(0.6)
             plt.figure(figsize=(w, h))
@@ -585,7 +585,7 @@ metrics = [
 episodes = np.arange(190, 200)
 slices = np.arange(3)
 
-gen_results(scenario_names, agent_names, episodes, metrics, slices)
+# gen_results(scenario_names, agent_names, episodes, metrics, slices)
 episodes = np.arange(140, 200)
 slice_names = ["urllc", "total"]
 agent_names = ["ssr_protect", "ssr"]
