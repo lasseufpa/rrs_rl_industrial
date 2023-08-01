@@ -5,6 +5,7 @@ import matplotlib.figure as matfig
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
+from matplotlib.ticker import FixedLocator, NullFormatter
 
 
 def gen_results(
@@ -507,6 +508,26 @@ def gen_results_histogram(
                         / slice_values.shape[0]
                     )
                     plt.plot(slice_values, y_axis, label=f"{agent}, {slice}")
+            if metric in ["buffer_latencies", "pkt_throughputs"]:
+                small_scale_interval = 1
+                large_scale_interval = 5
+                small_scale_limit = 5
+                graph_x_limit = 45 if metric == "buffer_latencies" else 27
+                try:
+                    assert isinstance(
+                        slice_values, np.ndarray  # type: ignore
+                    ), "Slice values must be a Numpy array"
+                    locator, tick_labels = custom_grid_locator(
+                        np.arange(np.max(slice_values)),
+                        small_scale_interval,
+                        large_scale_interval,
+                        small_scale_limit,
+                        graph_x_limit,
+                    )
+                    plt.gca().xaxis.set_major_locator(locator)
+                    plt.gca().xaxis.set_ticklabels(tick_labels)
+                except ValueError:
+                    slice_values = None
             plt.grid()
             plt.xlabel(xlabel, fontsize=14)
             plt.ylabel(ylabel, fontsize=14)
@@ -561,6 +582,28 @@ def read_episode_metric(
     return (episode_metric, slice_ue_assoc)
 
 
+def custom_grid_locator(
+    axis,
+    small_scale_interval,
+    large_scale_interval,
+    small_scale_limit,
+    graph_x_limit,
+):
+    small_scale_ticks = np.arange(0, small_scale_limit, small_scale_interval)
+    large_scale_ticks = np.arange(
+        small_scale_limit, graph_x_limit, large_scale_interval
+    )
+
+    all_ticks = np.concatenate((small_scale_ticks, large_scale_ticks))
+
+    tick_labels = [
+        str(tick) if tick in large_scale_ticks or tick == 0 else ""
+        for tick in all_ticks
+    ]
+
+    return FixedLocator(all_ticks), tick_labels
+
+
 scenario_names = ["industrial"]
 agent_names = ["ssr_protect", "ssr"]
 metrics = [
@@ -586,7 +629,7 @@ episodes = np.arange(190, 200)
 slices = np.arange(3)
 
 # gen_results(scenario_names, agent_names, episodes, metrics, slices)
-episodes = np.arange(140, 200)
+episodes = np.arange(160, 200)
 slice_names = ["urllc", "total"]
 agent_names = ["ssr_protect", "ssr"]
 gen_results_violations(scenario_names, agent_names, episodes, slice_names)
