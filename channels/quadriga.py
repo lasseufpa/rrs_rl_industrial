@@ -32,6 +32,7 @@ class QuadrigaChannels(Channel):
         if self.episode_number != episode_number:
             self.episode_number = episode_number
             self.episode_channels = self.read_mat_files(episode_number)
+            print(episode_number)
 
         if sched_decision is not None:
             return self.calc_spectral_eff(sched_decision, step_number)
@@ -45,19 +46,21 @@ class QuadrigaChannels(Channel):
     def calc_spectral_eff(
         self, sched_decision: np.ndarray, step_number: int
     ) -> np.ndarray:
+        # Implementing the MRT precoder to achieve diversity gains
+        x = self.episode_channels.shape
+        allocated_rbs_channels = np.zeros((1, self.max_number_ues, x[3]), dtype='complex')
+        for u in range(x[2]):
+            for rb in range(x[3]):
+                channel_herm = self.episode_channels[:, :, u, rb, step_number].conj()
+                channel_norm = np.linalg.norm(channel_herm)
+                w = channel_herm / channel_norm
+                aux = np.dot(self.episode_channels[:, :, u, rb, step_number], w.conj().T)
+                allocated_rbs_channels[0, u, rb] = aux[0, 0]
+
         # Sum transmitter and receiver antennas, and changing dimensions to
         # B x U x R to match sched_decision dimensions. After multiplying
         # with sched_decision, we obtain the channels only in the allocated RB
-        allocated_rbs_channels = (
-            np.expand_dims(
-                np.sum(
-                    np.sum(self.episode_channels[:, :, :, :, step_number], 0),
-                    0,
-                ),
-                0,
-            )
-            * sched_decision
-        )
+        allocated_rbs_channels = allocated_rbs_channels * sched_decision
 
         allocated_rbs_rsrp = np.power(np.abs(allocated_rbs_channels), 2)
         spectral_efficiencies = np.log2(
@@ -71,6 +74,9 @@ class QuadrigaChannels(Channel):
         return spectral_efficiencies
 
     def read_mat_files(self, episode: int) -> np.ndarray:
-        channels = sio.loadmat(f"channels/quadriga_channels/sim_{episode}.mat")
+        #channels = sio.loadmat(f"channels/quadriga_channels/sim_{episode}.mat")
+        channels = sio.loadmat(f"D:/CPQD/Quadriga_sim/channel/2x2/NumOfUes100/SCS_15/sim_{episode+1}.mat" )
+        #aux2 = sio.loadmat(f"D:/CPQD/Quadriga_sim/channel/2x2/NumOfUes50/SCS_60/sim_{episode+1}.mat" )
+        #channels = np.concatenate((aux1["H"], aux2["H"]), axis=2)
 
         return channels["H"]
