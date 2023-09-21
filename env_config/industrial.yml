@@ -8,16 +8,19 @@ slices:
   max_number_slices: 3
   slice_req:
     embb:
-      number_ues: 20
+      number_ues: 30
       ue_throughput: 20 # Mbps
+      #ue_throughput: 40 # Mbps
       latency: 30 # ms
     urllc:
-      number_ues: 20
+      number_ues: 40
       ue_throughput: 5 # Mbps
+      #ue_throughput: 10 # Mbps
       latency: 1
     mmtc:
-      number_ues: 60
+      number_ues: 30
       ue_throughput: 0.1 # Mbps
+      #ue_throughput: 0.2 # Mbps
       latency: 50 # ms
       active_probability: 0.5
 ues:

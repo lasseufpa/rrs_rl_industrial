@@ -121,35 +121,66 @@ class SSRProtect(Agent):
         return slice_values
 
     def calculate_reward(self, obs_space: dict) -> float:
-        reward = 0
         metric_slices = self.obs_space_format(obs_space, False)
         maximum_buffer_latency = 100
+        reward = {
+            "urllc": {
+                "throughput": {
+                    "value": 0,
+                    "weight": 0.5,
+                },
+                "latency": {
+                    "value": 0,
+                    "weight": 0.5,
+                },
+            },
+            "embb": {
+                "throughput": {
+                    "value": 0,
+                    "weight": 0.5,
+                },
+                "latency": {
+                    "value": 0,
+                    "weight": 0.3,
+                },
+            },
+            "mmtc": {
+                "latency": {
+                    "value": 0,
+                    "weight": 0.2,
+                },
+            },
+        }
 
         # URLLC
         urllc_req_throughput = self.env.slice_req["urllc"]["ue_throughput"]
         urllc_req_latency = self.env.slice_req["urllc"]["latency"]
-        reward -= (
+        reward["urllc"]["throughput"]["value"] -= (
             1 - metric_slices[1] / urllc_req_throughput
             if metric_slices[1] < urllc_req_throughput
             else 0
         )
-        reward -= (
+        reward["urllc"]["latency"]["value"] -= (
             (metric_slices[4] - urllc_req_latency)
             / (maximum_buffer_latency - urllc_req_latency)
             if metric_slices[4] > urllc_req_latency
             else 0
         )
 
-        if np.isclose(reward, 0):
+        if np.isclose(
+            reward["urllc"]["throughput"]["value"]
+            + reward["urllc"]["latency"]["value"],
+            0,
+        ):
             # eMBB
             embb_req_throughput = self.env.slice_req["embb"]["ue_throughput"]
             embb_req_latency = self.env.slice_req["embb"]["latency"]
-            reward -= (
+            reward["embb"]["throughput"]["value"] -= (
                 1 - metric_slices[0] / embb_req_throughput
                 if metric_slices[0] < embb_req_throughput
                 else 0
             )
-            reward -= (
+            reward["embb"]["latency"]["value"] -= (
                 (metric_slices[3] - embb_req_latency)
                 / (maximum_buffer_latency - embb_req_latency)
                 if metric_slices[3] > embb_req_latency
@@ -157,17 +188,31 @@ class SSRProtect(Agent):
             )
 
             # mMTC
-            mmtc_req_latency = self.env.slice_req["embb"]["latency"]
-            reward -= (
+            mmtc_req_latency = self.env.slice_req["mmtc"]["latency"]
+            reward["mmtc"]["latency"]["value"] -= (
                 (metric_slices[5] - mmtc_req_latency)
                 / (maximum_buffer_latency - mmtc_req_latency)
                 if metric_slices[5] > mmtc_req_latency
                 else 0
             )
-        else:
-            reward -= 3 - 10 * reward
 
-        return reward
+            total_reward = (
+                reward["embb"]["throughput"]["weight"]
+                * reward["embb"]["throughput"]["value"]
+                + reward["embb"]["latency"]["weight"]
+                * reward["embb"]["latency"]["value"]
+                + reward["mmtc"]["latency"]["value"]
+                * reward["mmtc"]["latency"]["weight"]
+            )
+        else:
+            total_reward = (
+                reward["urllc"]["throughput"]["value"]
+                * reward["urllc"]["throughput"]["weight"]
+                + reward["urllc"]["latency"]["value"]
+                * reward["urllc"]["latency"]["weight"]
+            )
+
+        return total_reward
 
     @staticmethod
     def get_action_space() -> spaces.Box:
