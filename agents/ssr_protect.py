@@ -210,7 +210,7 @@ class SSRProtect(Agent):
                 * reward["urllc"]["throughput"]["weight"]
                 + reward["urllc"]["latency"]["value"]
                 * reward["urllc"]["latency"]["weight"]
-            )
+            ) - 1
 
         return total_reward
 
