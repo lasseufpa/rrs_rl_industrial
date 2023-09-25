@@ -25,7 +25,7 @@ from traffics.industrial import IndustrialTraffic
 N_TRIALS = 100
 N_STARTUP_TRIALS = 5
 N_EVALUATIONS = 5
-N_TIMESTEPS = 1e3
+N_TIMESTEPS = 1e4
 EVAL_FREQ = int(N_TIMESTEPS / N_EVALUATIONS)
 N_EVAL_EPISODES = 1
 SEED = 10
