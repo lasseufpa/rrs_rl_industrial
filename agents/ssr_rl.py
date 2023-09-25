@@ -18,6 +18,7 @@ class SSRRL(Agent):
         num_available_rbs: np.ndarray,
         hyperparameters: dict = {},
         seed: int = np.random.randint(1000),
+        hyperparams: str = "",
     ) -> None:
         super().__init__(
             env,

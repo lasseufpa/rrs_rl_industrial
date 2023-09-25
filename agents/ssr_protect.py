@@ -4,6 +4,7 @@ import numpy as np
 from gymnasium import spaces
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.sac.sac import SAC
+import joblib
 
 from agents.callbacks import ProgressBarManager
 from sixg_radio_mgmt import Agent, CommunicationEnv
@@ -18,6 +19,7 @@ class SSRProtect(Agent):
         num_available_rbs: np.ndarray,
         hyperparameters: dict = {},
         seed: int = np.random.randint(1000),
+        hyperparams: str = "",
     ) -> None:
         super().__init__(
             env,
@@ -26,13 +28,24 @@ class SSRProtect(Agent):
             num_available_rbs,
             seed,
         )
-        self.agent = SAC(
-            "MlpPolicy",
-            env,
-            verbose=0,
-            tensorboard_log="./tensorboard-logs/",
-            seed=self.seed,
-        )
+        if hyperparams == "":
+            self.agent = SAC(
+                "MlpPolicy",
+                env,
+                verbose=0,
+                tensorboard_log="./tensorboard-logs/",
+                seed=self.seed,
+            )
+        else:
+            hyperparameters = self.optimized_hyperparameters()
+            self.agent = SAC(
+                "MlpPolicy",
+                env,
+                verbose=0,
+                tensorboard_log="./tensorboard-logs/",
+                seed=self.seed,
+                **hyperparameters,
+            )
         self.callback_checkpoint = CheckpointCallback(
             save_freq=1000,
             save_path="./agents/models/ssr_protect/",
@@ -277,3 +290,20 @@ class SSRProtect(Agent):
                 initial_rb += int(self.rbs_per_ue[idx])
 
         return np.array(self.allocation_rbs)
+
+    def optimized_hyperparameters(self):
+        hyperparameters = joblib.load(
+            "hyperparameter_opt/ssr_protect.pkl"
+        ).best_params
+        net_arch = {
+            "small": [64, 64],
+            "medium": [256, 256],
+            "big": [400, 300],
+        }[hyperparameters["net_arch"]]
+        hyperparameters["policy_kwargs"] = dict(net_arch=net_arch)
+        hyperparameters.pop("net_arch")
+        hyperparameters["target_entropy"] = "auto"
+        hyperparameters["ent_coef"] = "auto"
+        hyperparameters["gradient_steps"] = hyperparameters["train_freq"]
+
+        return hyperparameters

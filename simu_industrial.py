@@ -12,7 +12,7 @@ from sixg_radio_mgmt import CommunicationEnv
 from traffics.industrial import IndustrialTraffic
 
 scenarios = ["industrial"]
-agents = ["ssr", "ssr_protect"]
+agents = ["ssr_protect", "ssr"]
 
 seed = 10
 for scenario in scenarios:
@@ -43,6 +43,7 @@ for scenario in scenarios:
             comm_env.max_number_basestations,
             comm_env.num_available_rbs,
             seed=seed,
+            hyperparams="ssr_protect" if agent_name == "ssr_protect" else "",
         )
         comm_env.set_agent_functions(
             agent.obs_space_format,
