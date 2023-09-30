@@ -366,7 +366,8 @@ def gen_results_violations(
                 )
                 mean_violations = np.mean(slice_episodes_violations, axis=0)
                 std_violations = np.std(slice_episodes_violations, axis=0)
-                plt.plot(mean_violations, label=f"{agent}, {slice}")
+                agent_name = "SSR" if agent == "ssr" else "Proposed Method"
+                plt.plot(mean_violations, label=f"{agent_name}, {slice}")
                 plt.fill_between(
                     np.arange(std_violations.shape[0]),
                     mean_violations - std_violations,
@@ -507,12 +508,15 @@ def gen_results_histogram(
                         np.arange(slice_values.shape[0])
                         / slice_values.shape[0]
                     )
-                    plt.plot(slice_values, y_axis, label=f"{agent}, {slice}")
+                    agent_name = "SSR" if agent == "ssr" else "Proposed Method"
+                    plt.plot(
+                        slice_values, y_axis, label=f"{agent_name}, {slice}"
+                    )
             if metric in ["buffer_latencies", "pkt_throughputs"]:
                 small_scale_interval = 1
                 large_scale_interval = 5
                 small_scale_limit = 5
-                graph_x_limit = 45 if metric == "buffer_latencies" else 27
+                graph_x_limit = 50 if metric == "buffer_latencies" else 27
                 try:
                     assert isinstance(
                         slice_values, np.ndarray  # type: ignore
@@ -532,7 +536,10 @@ def gen_results_histogram(
             plt.xlabel(xlabel, fontsize=14)
             plt.ylabel(ylabel, fontsize=14)
             plt.xticks(fontsize=12)
-            plt.legend(fontsize=12)
+            if metric in ["buffer_latencies"]:
+                plt.legend(fontsize=12, loc="lower right")
+            else:
+                plt.legend(fontsize=12)
             os.makedirs(
                 f"./results/{scenario}/",
                 exist_ok=True,
@@ -597,7 +604,9 @@ def custom_grid_locator(
     all_ticks = np.concatenate((small_scale_ticks, large_scale_ticks))
 
     tick_labels = [
-        str(tick) if tick in large_scale_ticks or tick == 0 else ""
+        str(tick)
+        if tick in large_scale_ticks or tick == 0 or tick == 1
+        else ""
         for tick in all_ticks
     ]
 
