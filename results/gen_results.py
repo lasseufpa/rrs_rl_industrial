@@ -1,5 +1,6 @@
 import os
 from typing import Tuple
+from matplotlib import lines
 
 import matplotlib.figure as matfig
 import matplotlib.pyplot as plt
@@ -445,6 +446,8 @@ def gen_results_histogram(
         "urllc": 1,
         "mmtc": 2,
     }
+    color = {"ssr_protect": "tab:blue", "ssr": "tab:red"}
+    markers = {"embb": "o", "urllc": "s", "mmtc": "*"}
     ylabel = "Cumulative distribution function (CDF)"
     xlabel = ""
     for scenario in scenario_names:
@@ -510,7 +513,13 @@ def gen_results_histogram(
                     )
                     agent_name = "SSR" if agent == "ssr" else "Proposed Method"
                     plt.plot(
-                        slice_values, y_axis, label=f"{agent_name}, {slice}"
+                        slice_values,
+                        y_axis,
+                        label=f"{agent_name}, {slice}",
+                        color=color[agent],
+                        marker=markers[slice],
+                        linestyle="-",
+                        markevery=4000,
                     )
             if metric in ["buffer_latencies", "pkt_throughputs"]:
                 small_scale_interval = 1
